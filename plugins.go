@@ -6,7 +6,7 @@ import (
 )
 
 func LoggerRouter(ac *AnnotationContext) HandlerFunc {
-	fmt.Printf("[Kelly] %v | %4s %s\n",
+	fmt.Printf("[Kelly] %v | %8s %s\n",
 		time.Now().Format("2006/01/02 15:04:05"),
 		ac.Method,
 		ac.Path,
