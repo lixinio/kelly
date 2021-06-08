@@ -22,6 +22,7 @@ type SwaggerApiParameter struct {
 	In          string         `json:"in" yaml:"in" binding:"eq=query|eq=path|eq=formData|eq=body|eq=header"`
 	Name        string         `json:"name" yaml:"name" binding:"required,max=100,min=1"`
 	Required    bool           `json:"required" yaml:"required"`
+	Example     interface{}    `json:"example,omitempty" yaml:"example,omitempty"`
 	Type        string         `json:"type" yaml:"type" binding:"eq=string|eq=integer|eq=number|eq=boolean|eq=array|eq=object|eq=file"`
 	Schema      *JsonSchemaObj `json:"schema,omitempty" yaml:"schema"`
 }
@@ -32,6 +33,7 @@ type JsonSchemaObj struct {
 	Items       *JsonSchemaObj            `json:"items,omitempty" yaml:"items"`
 	Properties  map[string]*JsonSchemaObj `json:"properties,omitempty" yaml:"properties"`
 	Required    []string                  `json:"required,omitempty" yaml:"required"`
+	Example     interface{}               `json:"example,omitempty" yaml:"example,omitempty"`
 	Schema      *JsonSchemaObj            `json:"schema,omitempty" yaml:"schema"`
 }
 

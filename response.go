@@ -137,6 +137,11 @@ func (r *responseImp) WriteData(code int, contentType string, data []byte) {
 }
 
 func (r *responseImp) Abort(code int, msg string) {
+	if code == http.StatusNoContent {
+		r.ResponseWriter.WriteHeader(code)
+		return
+	}
+
 	if len(msg) == 0 {
 		msg = http.StatusText(code)
 	}

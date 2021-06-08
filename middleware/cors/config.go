@@ -1,6 +1,7 @@
 package cors
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -60,7 +61,7 @@ func newCors(config Config) *cors {
 	}
 }
 
-func (cors *cors) applyCors(c *kelly.Context) {
+func (cors *cors) applyCors(c *kelly.Context) (err error) {
 	origin := c.Request().Header.Get("Origin")
 	if len(origin) == 0 {
 		// request is not a CORS request
@@ -81,7 +82,7 @@ func (cors *cors) applyCors(c *kelly.Context) {
 
 	if c.Request().Method == "OPTIONS" {
 		cors.handlePreflight(c)
-		defer c.Abort(http.StatusNoContent, "") // Using 204 is better than 200 when the request status is OPTIONS
+		err = errors.New("skip OPTIONS")
 	} else {
 		cors.handleNormal(c)
 	}
@@ -89,6 +90,7 @@ func (cors *cors) applyCors(c *kelly.Context) {
 	if !cors.allowAllOrigins {
 		c.SetHeader("Access-Control-Allow-Origin", origin)
 	}
+	return
 }
 
 func (cors *cors) validateWildcardOrigin(origin string) bool {

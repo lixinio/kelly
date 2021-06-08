@@ -37,7 +37,6 @@ func (s *Swagger) SwaggerUIView(spec string) kelly.AnnotationHandlerFunc {
 func (s *Swagger) SwaggerSpecView() kelly.AnnotationHandlerFunc {
 	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
 		return func(c *kelly.Context) {
-			c.SetHeader("Access-Control-Allow-Origin", "*")
 			c.WriteRawJSON(http.StatusOK, s.specData)
 		}
 	}

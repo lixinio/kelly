@@ -2,6 +2,7 @@ package cors
 
 import (
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -157,7 +158,11 @@ func Cors(config Config) kelly.AnnotationHandlerFunc {
 
 	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
 		return func(c *kelly.Context) {
-			cors.applyCors(c)
+			if cors.applyCors(c) == nil {
+				c.InvokeNext()
+			} else {
+				c.Abort(http.StatusNoContent, "")
+			}
 		}
 	}
 }
