@@ -9,8 +9,10 @@ import (
 
 func middleware(title string) kelly.AnnotationHandlerFunc {
 	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(*kelly.Context) {
+		fmt.Println("middleware", title, ac.Method, ac.Path)
+		return func(c *kelly.Context) {
 			fmt.Println("this is middleware ", title)
+			c.InvokeNext()
 		}
 	}
 }
@@ -44,12 +46,14 @@ func initRouter1(r kelly.Router) {
 		middleware("view/api/v1_1"),
 		middleware("view/api/v1_2"),
 		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
-				c.WriteIndentedJSON(http.StatusOK, kelly.H{
-					"message": "this is v1",
-					"code":    "0",
-				})
-			}
+			fmt.Println("view", ac.Method, ac.Path)
+			return func(c *kelly.Context) {}
+		},
+		func(c *kelly.Context) {
+			c.WriteIndentedJSON(http.StatusOK, kelly.H{
+				"message": "this is v1",
+				"code":    "0",
+			})
 		},
 	)
 
@@ -63,13 +67,11 @@ func initRouter2(r kelly.Router) {
 	api.GET("/",
 		middleware("view/api/v2_1"),
 		middleware("view/api/v2_2"),
-		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
-				c.WriteIndentedJSON(http.StatusOK, kelly.H{
-					"message": "this is v2",
-					"code":    "0",
-				})
-			}
+		func(c *kelly.Context) {
+			c.WriteIndentedJSON(http.StatusOK, kelly.H{
+				"message": "this is v2",
+				"code":    "0",
+			})
 		},
 	)
 
@@ -80,29 +82,25 @@ func initRouterFilter(r kelly.Router) {
 	r.GET("/user",
 		middleware("view/user_1"),
 		middleware("view/user_2"),
-		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
-				// 从query参数（id）获取
-				uid := c.GetDefaultQueryVarible("id", "")
-				if uid == "" {
-					fmt.Println("param error, break")
-					c.WriteIndentedJSON(http.StatusOK, kelly.H{
-						"message": "this is user",
-						"code":    "404",
-					})
-				} else {
-					fmt.Println("get param ", uid)
-					c.InvokeNext()
-				}
-			}
-		},
-		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
+		func(c *kelly.Context) {
+			// 从query参数（id）获取
+			uid := c.GetDefaultQueryVarible("id", "")
+			if uid == "" {
+				fmt.Println("param error, break")
 				c.WriteIndentedJSON(http.StatusOK, kelly.H{
 					"message": "this is user",
-					"code":    "0",
+					"code":    "404",
 				})
+			} else {
+				fmt.Println("get param ", uid)
+				c.InvokeNext()
 			}
+		},
+		func(c *kelly.Context) {
+			c.WriteIndentedJSON(http.StatusOK, kelly.H{
+				"message": "this is user",
+				"code":    "0",
+			})
 		},
 	)
 }
@@ -114,13 +112,11 @@ func main() {
 	initRouter1(router)
 	initRouter2(router)
 	initRouterFilter(router)
-	router.GET("/", middleware("view/"), func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"message": "this is main",
-				"code":    "0",
-			})
-		}
+	router.GET("/", middleware("view/"), func(c *kelly.Context) {
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"message": "this is main",
+			"code":    "0",
+		})
 	})
 	router.Use(middleware("main3"))
 	router.Run(":9999")

@@ -73,15 +73,15 @@ func postFormFramwork(handler HandlerFunc, path string, values [][]string) *http
 	return w.Result()
 }
 
-func kellyFramwork(pattern, path string, groups []string, handlers ...AnnotationHandlerFunc) *http.Response {
+func kellyFramwork(pattern, path string, groups []string, handlers ...interface{}) *http.Response {
 	return kellyFramworkImp(pattern, "", path, groups, map[string]string{}, nil, handlers...)
 }
 
-func kellyFormFramwork(pattern, path string, groups []string, form map[string]string, handlers ...AnnotationHandlerFunc) *http.Response {
+func kellyFormFramwork(pattern, path string, groups []string, form map[string]string, handlers ...interface{}) *http.Response {
 	return kellyFramworkImp(pattern, "post", path, groups, form, nil, handlers...)
 }
 
-func kellyJSONFramwork(pattern, path string, groups []string, body interface{}, handlers ...AnnotationHandlerFunc) *http.Response {
+func kellyJSONFramwork(pattern, path string, groups []string, body interface{}, handlers ...interface{}) *http.Response {
 	return kellyFramworkImp(pattern, "patch", path, groups, map[string]string{}, body, handlers...)
 }
 
@@ -89,7 +89,7 @@ func kellyFramworkImp(
 	pattern, method, path string, groups []string,
 	form map[string]string,
 	body interface{},
-	handlers ...AnnotationHandlerFunc,
+	handlers ...interface{},
 ) *http.Response {
 	k := New(nil)
 	if len(groups) == 0 {

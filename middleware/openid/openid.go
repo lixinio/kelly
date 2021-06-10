@@ -3,6 +3,7 @@ package openid
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,13 +11,19 @@ import (
 	"github.com/lixinio/kelly"
 )
 
+type AuthError string
+
+func (err AuthError) Error() string {
+	return string(err)
+}
+
 // 错误码
-const (
-	ErrGetTokenFail     int = 10000 // 获取token失败
-	ErrTokenVerifyFail      = 10001 // 校验token失败
-	ErrTokenInvalidType     = 10002 // 认证失败
-	ErrTokenAuthFail        = 10003 // 认证失败
-	ErrTokenExpired         = 10004 // token过期
+var (
+	ErrGetTokenFail     error = AuthError("get token fail")     // 获取token失败
+	ErrTokenVerifyFail        = AuthError("verify token fail")  // 校验token失败
+	ErrTokenInvalidType       = AuthError("invalid token type") // 认证失败
+	ErrTokenAuthFail          = AuthError("auth token fail")    // 认证失败
+	ErrTokenExpired           = AuthError("token expired")      // token过期
 )
 
 type MapClaims map[string]interface{}
@@ -36,7 +43,7 @@ type TokenGetterFunc func(*kelly.Context) (string, error)
 type AuthorizatorFunc func(*MapClaims) (interface{}, error)
 
 // ErrorHandlerFunc 错误处理函数
-type ErrorHandlerFunc func(*kelly.Context, int, error)
+type ErrorHandlerFunc func(*kelly.Context, error)
 
 type OpenIDAuthConfig struct {
 	TokenGetter  TokenGetterFunc
@@ -46,8 +53,20 @@ type OpenIDAuthConfig struct {
 	Audience     string
 }
 
-func defaultErrorHandler(c *kelly.Context, code int, err error) {
-	c.Abort(http.StatusUnauthorized, err.Error())
+func defaultErrorHandler(c *kelly.Context, err error) {
+	var aerr AuthError
+	if errors.As(err, &aerr) {
+		c.WriteJSON(http.StatusUnauthorized, kelly.H{
+			"code":    http.StatusText(http.StatusUnauthorized),
+			"message": aerr.Error(),
+			"detail":  err.Error(),
+		})
+	} else {
+		c.WriteJSON(http.StatusUnauthorized, kelly.H{
+			"code":    http.StatusText(http.StatusUnauthorized),
+			"message": err.Error(),
+		})
+	}
 }
 
 func defaultTokenGetter(c *kelly.Context) (string, error) {
@@ -73,7 +92,7 @@ func CurrentUser(c *kelly.Context) interface{} {
 	return c.MustGet(contextDataKeyOpenIDUser)
 }
 
-func OpenIDAuth(config *OpenIDAuthConfig) (kelly.AnnotationHandlerFunc, error) {
+func OpenIDAuth(config *OpenIDAuthConfig) (kelly.HandlerFunc, error) {
 	if config.ErrorHandler == nil {
 		config.ErrorHandler = defaultErrorHandler
 	}
@@ -91,34 +110,32 @@ func OpenIDAuth(config *OpenIDAuthConfig) (kelly.AnnotationHandlerFunc, error) {
 		ClientID: config.Audience,
 	})
 
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			token, err := config.TokenGetter(c)
-			if err != nil {
-				config.ErrorHandler(c, ErrGetTokenFail, err)
-				return
-			}
-
-			idtoken, err := verifier.Verify(c.Request().Context(), token)
-			if err != nil {
-				config.ErrorHandler(c, ErrTokenVerifyFail, err)
-				return
-			}
-
-			var claims MapClaims
-			if err := idtoken.Claims(&claims); err != nil {
-				config.ErrorHandler(c, ErrTokenInvalidType, err)
-				return
-			}
-
-			user, err := config.Authorizator(&claims)
-			if err != nil {
-				config.ErrorHandler(c, ErrTokenAuthFail, err)
-				return
-			}
-
-			c.Set(contextDataKeyOpenIDUser, user)
-			c.InvokeNext()
+	return func(c *kelly.Context) {
+		token, err := config.TokenGetter(c)
+		if err != nil {
+			config.ErrorHandler(c, fmt.Errorf("get token fail(%v) : %w", err, ErrGetTokenFail))
+			return
 		}
+
+		idtoken, err := verifier.Verify(c.Request().Context(), token)
+		if err != nil {
+			config.ErrorHandler(c, fmt.Errorf("verify fail(%v) : %w", err, ErrTokenVerifyFail))
+			return
+		}
+
+		var claims MapClaims
+		if err := idtoken.Claims(&claims); err != nil {
+			config.ErrorHandler(c, fmt.Errorf("invalid token chaims fail(%v) : %w", err, ErrTokenInvalidType))
+			return
+		}
+
+		user, err := config.Authorizator(&claims)
+		if err != nil {
+			config.ErrorHandler(c, fmt.Errorf("auth fail(%v) : %w", err, ErrTokenAuthFail))
+			return
+		}
+
+		c.Set(contextDataKeyOpenIDUser, user)
+		c.InvokeNext()
 	}, nil
 }

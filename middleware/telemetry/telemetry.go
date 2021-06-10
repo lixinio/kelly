@@ -17,10 +17,8 @@ func (t *t) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.c.InvokeNext()
 }
 
-func OChttp(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-	return func(c *kelly.Context) {
-		h := &ochttp.Handler{Handler: &t{c}}
-		h.ServeHTTP(c.ResponseWriter, c.Request())
-		// 这里无需再 InvokeNext
-	}
+func OChttp(c *kelly.Context) {
+	h := &ochttp.Handler{Handler: &t{c}}
+	h.ServeHTTP(c.ResponseWriter, c.Request())
+	// 这里无需再 InvokeNext
 }

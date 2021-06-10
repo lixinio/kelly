@@ -9,12 +9,10 @@ import (
 func main() {
 	router := kelly.New(nil)
 
-	router.GET("/", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"code": "0",
-			})
-		}
+	router.GET("/", func(c *kelly.Context) {
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"code": "0",
+		})
 	})
 
 	router.Run(":9999")

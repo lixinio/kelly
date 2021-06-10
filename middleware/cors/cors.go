@@ -153,21 +153,19 @@ func DefaultConfig() Config {
 	}
 }
 
-func Cors(config Config) kelly.AnnotationHandlerFunc {
+func Cors(config Config) kelly.HandlerFunc {
 	cors := newCors(config)
 
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			if cors.applyCors(c) == nil {
-				c.InvokeNext()
-			} else {
-				c.Abort(http.StatusNoContent, "")
-			}
+	return func(c *kelly.Context) {
+		if cors.applyCors(c) == nil {
+			c.InvokeNext()
+		} else {
+			c.Abort(http.StatusNoContent, "")
 		}
 	}
 }
 
-func DefaultCors() kelly.AnnotationHandlerFunc {
+func DefaultCors() kelly.HandlerFunc {
 	config := DefaultConfig()
 	config.AllowAllOrigins = true
 	return Cors(config)

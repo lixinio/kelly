@@ -51,11 +51,9 @@ func subHandler(ctx context.Context) {
 	)
 }
 
-func Handler(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-	return func(c *kelly.Context) {
-		subHandler(c.Context())
-		c.ResponseStatusOK()
-	}
+func Handler(c *kelly.Context) {
+	subHandler(c.Context())
+	c.ResponseStatusOK()
 }
 
 func main() {

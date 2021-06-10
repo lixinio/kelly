@@ -30,51 +30,46 @@ const (
 
 // Basic returns a Handler that authenticates via Basic Auth. Writes a http.StatusUnauthorized
 // if authentication fails.
-func BasicAuth(username string, password string) kelly.AnnotationHandlerFunc {
+func BasicAuth(username string, password string) kelly.HandlerFunc {
 	var siteAuth = base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			if auth, err := c.GetHeader("Authorization"); err == nil {
-				if !secureCompare(auth, "Basic "+siteAuth) {
-					unauthorized(c)
-					return
-				}
-				c.Set(contextDataKeyBasicUser, username)
-			} else {
+	return func(c *kelly.Context) {
+		if auth, err := c.GetHeader("Authorization"); err == nil {
+			if !secureCompare(auth, "Basic "+siteAuth) {
 				unauthorized(c)
+				return
 			}
+			c.Set(contextDataKeyBasicUser, username)
+		} else {
+			unauthorized(c)
 		}
 	}
 }
 
 // BasicFunc returns a Handler that authenticates via Basic Auth using the provided function.
 // The function should return true for a valid username/password combination.
-func BasicAuthFunc(authfn func(string, string) bool) kelly.AnnotationHandlerFunc {
-
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			auth, err := c.GetHeader("Authorization")
-			if err != nil {
-				unauthorized(c)
-				return
-			}
-
-			if len(auth) < 6 || auth[:6] != "Basic " {
-				unauthorized(c)
-				return
-			}
-			b, err := base64.StdEncoding.DecodeString(auth[6:])
-			if err != nil {
-				unauthorized(c)
-				return
-			}
-			tokens := strings.SplitN(string(b), ":", 2)
-			if len(tokens) != 2 || !authfn(tokens[0], tokens[1]) {
-				unauthorized(c)
-				return
-			}
-			c.Set(contextDataKeyBasicUser, tokens[0])
+func BasicAuthFunc(authfn func(string, string) bool) kelly.HandlerFunc {
+	return func(c *kelly.Context) {
+		auth, err := c.GetHeader("Authorization")
+		if err != nil {
+			unauthorized(c)
+			return
 		}
+
+		if len(auth) < 6 || auth[:6] != "Basic " {
+			unauthorized(c)
+			return
+		}
+		b, err := base64.StdEncoding.DecodeString(auth[6:])
+		if err != nil {
+			unauthorized(c)
+			return
+		}
+		tokens := strings.SplitN(string(b), ":", 2)
+		if len(tokens) != 2 || !authfn(tokens[0], tokens[1]) {
+			unauthorized(c)
+			return
+		}
+		c.Set(contextDataKeyBasicUser, tokens[0])
 	}
 }
 

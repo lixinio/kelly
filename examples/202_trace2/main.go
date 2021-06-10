@@ -56,35 +56,31 @@ func subHandler(ctx context.Context, name string) {
 	)
 }
 
-func Handler(name string) kelly.AnnotationHandlerFunc {
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			subHandler(c.Context(), name)
-			time.Sleep(time.Millisecond * 100)
+func Handler(name string) kelly.HandlerFunc {
+	return func(c *kelly.Context) {
+		subHandler(c.Context(), name)
+		time.Sleep(time.Millisecond * 100)
 
-			// 调用http请求
-			req, _ := http.NewRequest("GET", "http://127.0.0.1:9998/slave", nil)
-			req = req.WithContext(c.Context())
-			client := &http.Client{Transport: &ochttp.Transport{}}
-			res, err := client.Do(req)
-			if err != nil {
-				log.Fatalf("Failed to make the request: %v", err)
-			}
-			io.Copy(ioutil.Discard, res.Body)
-			_ = res.Body.Close()
-
-			c.ResponseStatusOK()
+		// 调用http请求
+		req, _ := http.NewRequest("GET", "http://127.0.0.1:9998/slave", nil)
+		req = req.WithContext(c.Context())
+		client := &http.Client{Transport: &ochttp.Transport{}}
+		res, err := client.Do(req)
+		if err != nil {
+			log.Fatalf("Failed to make the request: %v", err)
 		}
+		io.Copy(ioutil.Discard, res.Body)
+		_ = res.Body.Close()
+
+		c.ResponseStatusOK()
 	}
 }
 
-func Handler2(name string) kelly.AnnotationHandlerFunc {
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			subHandler(c.Context(), name)
-			time.Sleep(time.Millisecond * 500)
-			c.ResponseStatusOK()
-		}
+func Handler2(name string) kelly.HandlerFunc {
+	return func(c *kelly.Context) {
+		subHandler(c.Context(), name)
+		time.Sleep(time.Millisecond * 500)
+		c.ResponseStatusOK()
 	}
 }
 

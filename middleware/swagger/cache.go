@@ -41,12 +41,20 @@ func newCache(docDir string, docLoader DocLoader) *cache {
 
 func (fc *cache) build(config *Config) []byte {
 	headersDef := make(map[string]SecurityDefinition)
+	security := []map[string]interface{}{}
 	if len(config.Headers) > 0 {
 		for _, v := range config.Headers {
-			key := v.Type
-			v.In = "header"
-			v.Type = "apiKey"
+			key := v.Name
+			if v.In == "" {
+				v.In = "header"
+			}
+			if v.Type == "" {
+				v.Type = "apiKey"
+			}
 			headersDef[key] = v
+			security = append(security, map[string]interface{}{
+				key: []string{},
+			})
 		}
 	}
 
@@ -65,6 +73,7 @@ func (fc *cache) build(config *Config) []byte {
 		"definition":          struct{}{},
 		"paths":               fc.swaggerData,
 		"securityDefinitions": headersDef,
+		"security":            security,
 	}, "", "    ")
 	if err != nil {
 		panic(fmt.Errorf("build spec fail : %w, error %s", ErrGenerateSwaggerSpecFail, err.Error()))

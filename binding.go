@@ -129,31 +129,29 @@ func BindMiddleware(
 	objG func() interface{},
 	validator validator.Validator,
 	errHandler BindErrorHandle,
-) AnnotationHandlerFunc {
+) HandlerFunc {
 	if errHandler == nil {
 		errHandler = handleBindErr
 	}
-	return func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := objG()
-			err := c.Bind(obj)
-			if err == nil {
-				if validator != nil {
-					err = validator.Validate(obj)
-					if err == nil {
-						c.Set(contextBindKey, obj)
-						c.InvokeNext()
-						return
-					}
-				} else {
+	return func(c *Context) {
+		obj := objG()
+		err := c.Bind(obj)
+		if err == nil {
+			if validator != nil {
+				err = validator.Validate(obj)
+				if err == nil {
 					c.Set(contextBindKey, obj)
 					c.InvokeNext()
 					return
 				}
+			} else {
+				c.Set(contextBindKey, obj)
+				c.InvokeNext()
+				return
 			}
-
-			errHandler(c, err)
 		}
+
+		errHandler(c, err)
 	}
 }
 
@@ -162,32 +160,30 @@ func BindJSONMiddleware(
 	objG func() interface{},
 	validator validator.Validator,
 	errHandler BindErrorHandle,
-) AnnotationHandlerFunc {
+) HandlerFunc {
 	if errHandler == nil {
 		errHandler = handleBindErr
 	}
 
-	return func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := objG()
-			err := c.BindJSON(obj)
-			if err == nil {
-				if validator != nil {
-					err = validator.Validate(obj)
-					if err == nil {
-						c.Set(contextBindJSONKey, obj)
-						c.InvokeNext()
-						return
-					}
-				} else {
+	return func(c *Context) {
+		obj := objG()
+		err := c.BindJSON(obj)
+		if err == nil {
+			if validator != nil {
+				err = validator.Validate(obj)
+				if err == nil {
 					c.Set(contextBindJSONKey, obj)
 					c.InvokeNext()
 					return
 				}
+			} else {
+				c.Set(contextBindJSONKey, obj)
+				c.InvokeNext()
+				return
 			}
-
-			errHandler(c, err)
 		}
+
+		errHandler(c, err)
 	}
 }
 
@@ -196,32 +192,30 @@ func BindXMLMiddleware(
 	objG func() interface{},
 	validator validator.Validator,
 	errHandler BindErrorHandle,
-) AnnotationHandlerFunc {
+) HandlerFunc {
 	if errHandler == nil {
 		errHandler = handleBindErr
 	}
 
-	return func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := objG()
-			err := c.BindXML(obj)
-			if err == nil {
-				if validator != nil {
-					err = validator.Validate(obj)
-					if err == nil {
-						c.Set(contextBindXMLKey, obj)
-						c.InvokeNext()
-						return
-					}
-				} else {
+	return func(c *Context) {
+		obj := objG()
+		err := c.BindXML(obj)
+		if err == nil {
+			if validator != nil {
+				err = validator.Validate(obj)
+				if err == nil {
 					c.Set(contextBindXMLKey, obj)
 					c.InvokeNext()
 					return
 				}
+			} else {
+				c.Set(contextBindXMLKey, obj)
+				c.InvokeNext()
+				return
 			}
-
-			errHandler(c, err)
 		}
+
+		errHandler(c, err)
 	}
 }
 
@@ -230,32 +224,30 @@ func BindFormMiddleware(
 	objG func() interface{},
 	validator validator.Validator,
 	errHandler BindErrorHandle,
-) AnnotationHandlerFunc {
+) HandlerFunc {
 	if errHandler == nil {
 		errHandler = handleBindErr
 	}
 
-	return func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := objG()
-			err := c.BindForm(obj)
-			if err == nil {
-				if validator != nil {
-					err = validator.Validate(obj)
-					if err == nil {
-						c.Set(contextBindFormKey, obj)
-						c.InvokeNext()
-						return
-					}
-				} else {
+	return func(c *Context) {
+		obj := objG()
+		err := c.BindForm(obj)
+		if err == nil {
+			if validator != nil {
+				err = validator.Validate(obj)
+				if err == nil {
 					c.Set(contextBindFormKey, obj)
 					c.InvokeNext()
 					return
 				}
+			} else {
+				c.Set(contextBindFormKey, obj)
+				c.InvokeNext()
+				return
 			}
-
-			errHandler(c, err)
 		}
+
+		errHandler(c, err)
 	}
 }
 
@@ -264,31 +256,29 @@ func BindPathMiddleware(
 	objG func() interface{},
 	validator validator.Validator,
 	errHandler BindErrorHandle,
-) AnnotationHandlerFunc {
+) HandlerFunc {
 	if errHandler == nil {
 		errHandler = handleBindErr
 	}
 
-	return func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := objG()
-			err := c.BindPath(obj)
-			if err == nil {
-				if validator != nil {
-					err = validator.Validate(obj)
-					if err == nil {
-						c.Set(contextBindPathKey, obj)
-						c.InvokeNext()
-						return
-					}
-				} else {
+	return func(c *Context) {
+		obj := objG()
+		err := c.BindPath(obj)
+		if err == nil {
+			if validator != nil {
+				err = validator.Validate(obj)
+				if err == nil {
 					c.Set(contextBindPathKey, obj)
 					c.InvokeNext()
 					return
 				}
+			} else {
+				c.Set(contextBindPathKey, obj)
+				c.InvokeNext()
+				return
 			}
-
-			errHandler(c, err)
 		}
+
+		errHandler(c, err)
 	}
 }

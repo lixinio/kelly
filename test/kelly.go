@@ -12,7 +12,7 @@ import (
 func KellyFramwork(
 	pattern, path string,
 	headers map[string]string,
-	handlers ...kelly.AnnotationHandlerFunc,
+	handlers ...interface{},
 ) *http.Response {
 	return kellyFramworkImp(pattern, "", path, headers, map[string]string{}, nil, handlers...)
 }
@@ -20,7 +20,7 @@ func KellyFramwork(
 func KellyFormFramwork(
 	pattern, path string,
 	headers map[string]string, form map[string]string,
-	handlers ...kelly.AnnotationHandlerFunc,
+	handlers ...interface{},
 ) *http.Response {
 	return kellyFramworkImp(pattern, "post", path, headers, form, nil, handlers...)
 }
@@ -28,7 +28,7 @@ func KellyFormFramwork(
 func KellyJsonFramwork(
 	pattern, path string, body interface{},
 	headers map[string]string,
-	handlers ...kelly.AnnotationHandlerFunc,
+	handlers ...interface{},
 ) *http.Response {
 	return kellyFramworkImp(pattern, "patch", path, headers, map[string]string{}, body, handlers...)
 }
@@ -38,7 +38,7 @@ func kellyFramworkImp(
 	headers map[string]string,
 	form map[string]string,
 	body interface{},
-	handlers ...kelly.AnnotationHandlerFunc,
+	handlers ...interface{},
 ) *http.Response {
 	k := kelly.New(nil)
 	if method == "" || strings.ToLower(method) == "get" {

@@ -34,10 +34,8 @@ func (s *Swagger) SwaggerUIView(spec string) kelly.AnnotationHandlerFunc {
 	}
 }
 
-func (s *Swagger) SwaggerSpecView() kelly.AnnotationHandlerFunc {
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteRawJSON(http.StatusOK, s.specData)
-		}
+func (s *Swagger) SwaggerSpecView() kelly.HandlerFunc {
+	return func(c *kelly.Context) {
+		c.WriteRawJSON(http.StatusOK, s.specData)
 	}
 }

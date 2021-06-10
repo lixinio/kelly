@@ -35,7 +35,7 @@ var (
 	zlibLevels = [4]int{zlib.BestCompression, zlib.BestSpeed, zlib.DefaultCompression, zlib.NoCompression}
 )
 
-func Gzip(level int, method int) kelly.AnnotationHandlerFunc {
+func Gzip(level int, method int) kelly.HandlerFunc {
 
 	var gzPool sync.Pool
 	var methodStr = ""
@@ -53,27 +53,25 @@ func Gzip(level int, method int) kelly.AnnotationHandlerFunc {
 		panic(fmt.Errorf("invalid method %d", method))
 	}
 
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			if !shouldCompress(c.Request(), methodStr) {
-				return
-			}
-
-			gz := gzPool.Get().(compressWriter)
-			defer func() {
-				gz.SetCompressionWriter(ioutil.Discard)
-				gzPool.Put(gz)
-			}()
-			gz.SetCompressionWriter(c.ResponseWriter)
-			gz.SetResponseWriter(c.ResponseWriter)
-
-			c.SetHeader("Content-Encoding", methodStr)
-			c.SetHeader("Vary", "Accept-Encoding")
-			c.ResponseWriter = gz
-			defer func() {
-				gz.Close()
-			}()
+	return func(c *kelly.Context) {
+		if !shouldCompress(c.Request(), methodStr) {
+			return
 		}
+
+		gz := gzPool.Get().(compressWriter)
+		defer func() {
+			gz.SetCompressionWriter(ioutil.Discard)
+			gzPool.Put(gz)
+		}()
+		gz.SetCompressionWriter(c.ResponseWriter)
+		gz.SetResponseWriter(c.ResponseWriter)
+
+		c.SetHeader("Content-Encoding", methodStr)
+		c.SetHeader("Vary", "Accept-Encoding")
+		c.ResponseWriter = gz
+		defer func() {
+			gz.Close()
+		}()
 	}
 }
 

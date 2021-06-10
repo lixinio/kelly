@@ -12,47 +12,36 @@ import (
 func main() {
 	router := kelly.New(nil)
 
-	router.GET("/", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"message": "ok",
-				"code":    "0",
-			})
-		}
+	router.GET("/", func(c *kelly.Context) {
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"message": "ok",
+			"code":    "0",
+		})
 	})
 
-	router.GET("/json", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteJSON(http.StatusOK, kelly.H{
-				"message": "ok",
-				"code":    "0",
-			})
-		}
+	router.GET("/json", func(c *kelly.Context) {
+		c.WriteJSON(http.StatusOK, kelly.H{
+			"message": "ok",
+			"code":    "0",
+		})
 	})
 
-	router.GET("/str", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteString(http.StatusOK, "你好 %s， 你好 %s", "世界", "中国")
-		}
+	router.GET("/str", func(c *kelly.Context) {
+		c.WriteString(http.StatusOK, "你好 %s， 你好 %s", "世界", "中国")
 	})
 
-	router.GET("/xml", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteXML(http.StatusOK, kelly.H{ // 返回XML
-				"code": "/aaa/bbb",
-			})
-		}
+	router.GET("/xml", func(c *kelly.Context) {
+		c.WriteXML(http.StatusOK, kelly.H{ // 返回XML
+			"code": "/aaa/bbb",
+		})
 	})
 
-	router.GET("/redirect", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.Redirect(http.StatusFound, "http://www.baidu.com")
-		}
+	router.GET("/redirect", func(c *kelly.Context) {
+		c.Redirect(http.StatusFound, "http://www.baidu.com")
 	})
 
-	router.GET("/html", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			data := `<html>
+	router.GET("/html", func(c *kelly.Context) {
+		data := `<html>
 <body>
 	<form action="#" method="post">
 	<p>AAA: <input type="text" name="aaa" /></p>
@@ -62,8 +51,7 @@ func main() {
 	</form>
 </body>
 </html>`
-			c.WriteHTML(http.StatusOK, data)
-		}
+		c.WriteHTML(http.StatusOK, data)
 	})
 
 	router.GET("/template", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
@@ -83,25 +71,23 @@ func main() {
 		}
 	})
 
-	router.GET("/image", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			response, err := http.Get("https://mat1.gtimg.com/pingjs/ext2020/qqindex2018/dist/img/qq_logo_2x.png")
-			if err != nil {
-				panic(err)
-			}
-			defer response.Body.Close()
-
-			if response.StatusCode != 200 {
-				panic(errors.New("Received non 200 response code"))
-			}
-
-			body, err := ioutil.ReadAll(response.Body)
-			if err != nil {
-				panic(err)
-			}
-
-			c.WriteData(http.StatusOK, "image/png", body)
+	router.GET("/image", func(c *kelly.Context) {
+		response, err := http.Get("https://mat1.gtimg.com/pingjs/ext2020/qqindex2018/dist/img/qq_logo_2x.png")
+		if err != nil {
+			panic(err)
 		}
+		defer response.Body.Close()
+
+		if response.StatusCode != 200 {
+			panic(errors.New("Received non 200 response code"))
+		}
+
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		c.WriteData(http.StatusOK, "image/png", body)
 	})
 
 	router.Run(":9999")

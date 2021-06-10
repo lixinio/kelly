@@ -39,45 +39,41 @@ func initAuth(router kelly.Router) {
 		}
 	})
 
-	r.GET("/login/fail", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.Abort(401, "认证失败")
-		}
+	r.GET("/login/fail", func(c *kelly.Context) {
+		c.Abort(401, "认证失败")
 	})
 
-	r.POST("/login", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			username, err := c.GetFormVarible("username")
-			if err != nil {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
-			}
-			password, err := c.GetFormVarible("password")
-			if err != nil {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
-			}
+	r.POST("/login", func(c *kelly.Context) {
+		username, err := c.GetFormVarible("username")
+		if err != nil {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
+		}
+		password, err := c.GetFormVarible("password")
+		if err != nil {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
+		}
 
-			if len(username) > 0 && password == "456" {
-				// 构建jwt claims数据
-				claims := jwt.NewMapClaims(
-					jwtAud,
-					"kelly.jwtauth",
-					userID, // sub
-					3600,   // 一小时
-				)
-				claims.Update("username", username)
+		if len(username) > 0 && password == "456" {
+			// 构建jwt claims数据
+			claims := jwt.NewMapClaims(
+				jwtAud,
+				"kelly.jwtauth",
+				userID, // sub
+				3600,   // 一小时
+			)
+			claims.Update("username", username)
 
-				// 签发token并写入cookie
-				token, _ := jwt.GenerateHS256Token(claims, secretKey)
-				c.SetCookie(cookieKey, token, 0, "", "", false, false)
-				c.WriteIndentedJSON(http.StatusOK, kelly.H{
-					"code": "0",
-				})
-			} else {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
-			}
+			// 签发token并写入cookie
+			token, _ := jwt.GenerateHS256Token(claims, secretKey)
+			c.SetCookie(cookieKey, token, 0, "", "", false, false)
+			c.WriteIndentedJSON(http.StatusOK, kelly.H{
+				"code": "0",
+			})
+		} else {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
 		}
 	})
 }
@@ -116,14 +112,12 @@ func main() {
 		Audience:  jwtAud,
 	})
 
-	router.GET("/", jwtAuth, func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			user, _ := jwt.CurrentUser(c).(*User)
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"code": "0",
-				"data": user.Name,
-			})
-		}
+	router.GET("/", jwtAuth, func(c *kelly.Context) {
+		user, _ := jwt.CurrentUser(c).(*User)
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"code": "0",
+			"data": user.Name,
+		})
 	})
 
 	router.Run(":9999")

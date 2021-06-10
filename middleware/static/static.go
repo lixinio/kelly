@@ -21,7 +21,7 @@ type Config struct {
 // r.GET("/static/*path", kelly.Static(http.Dir("/tmp")))
 // 在内部依赖于名称为path的路径变量
 // 若将*path改成:path，将只能访问根目录的文件，无法嵌套
-func Static(config *Config) kelly.AnnotationHandlerFunc {
+func Static(config *Config) kelly.HandlerFunc {
 	staticTemp := `<pre>
 {{ range $key, $value := . }}
 	<a href="{{ $value.Url }}" style="color: {{ $value.Color }};">{{ $value.Name }}</a>
@@ -48,42 +48,40 @@ func Static(config *Config) kelly.AnnotationHandlerFunc {
 		}
 	}
 
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			// 获得Path变量
-			file := c.MustGetPathVarible("path")
-			fmt.Println("path ", file)
-			f, err := config.Dir.Open(file)
-			if err != nil {
-				handler404(c)
-				return
-			}
-			defer f.Close()
-
-			fi, err := f.Stat()
-			if err != nil {
-				handler404(c)
-				return
-			}
-
-			// 处理文件
-			if fi.IsDir() {
-				fmt.Println("serve path ", file)
-				if len(config.Indexfiles) > 0 {
-					if !serverIndex(config, file, c) {
-						// 如果找不到index， 又支持枚举
-						listDir(config, f, t, c)
-						return
-					}
-				}
-				if config.EnableListDir {
-					listDir(config, f, t, c)
-				}
-				return
-			}
-
-			http.ServeContent(c, c.Request(), file, fi.ModTime(), f)
+	return func(c *kelly.Context) {
+		// 获得Path变量
+		file := c.MustGetPathVarible("path")
+		fmt.Println("path ", file)
+		f, err := config.Dir.Open(file)
+		if err != nil {
+			handler404(c)
+			return
 		}
+		defer f.Close()
+
+		fi, err := f.Stat()
+		if err != nil {
+			handler404(c)
+			return
+		}
+
+		// 处理文件
+		if fi.IsDir() {
+			fmt.Println("serve path ", file)
+			if len(config.Indexfiles) > 0 {
+				if !serverIndex(config, file, c) {
+					// 如果找不到index， 又支持枚举
+					listDir(config, f, t, c)
+					return
+				}
+			}
+			if config.EnableListDir {
+				listDir(config, f, t, c)
+			}
+			return
+		}
+
+		http.ServeContent(c, c.Request(), file, fi.ModTime(), f)
 	}
 }
 

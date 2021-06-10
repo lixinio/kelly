@@ -79,7 +79,7 @@ func GetHubFromContext(c *kelly.Context) *sentrygo.Hub {
 	return nil
 }
 
-func Sentry(config *SentryConfig) kelly.AnnotationHandlerFunc {
+func Sentry(config *SentryConfig) kelly.HandlerFunc {
 	if config == nil {
 		panic(fmt.Errorf("sentry config can NOT be empty : %w", ErrSentryConfig))
 	}
@@ -117,18 +117,16 @@ func Sentry(config *SentryConfig) kelly.AnnotationHandlerFunc {
 		panic(fmt.Errorf("sentry init fail : %w(%s)", ErrSentryConfig, err))
 	}
 
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			r := c.Request()
-			hub := sentrygo.GetHubFromContext(r.Context())
-			if hub == nil {
-				hub = sentrygo.CurrentHub().Clone()
-			}
-			hub.Scope().SetRequest(r)
-			c.Set(contextDataContext, hub)
-
-			defer recoverWithSentry(config, hub, r)
-			c.InvokeNext()
+	return func(c *kelly.Context) {
+		r := c.Request()
+		hub := sentrygo.GetHubFromContext(r.Context())
+		if hub == nil {
+			hub = sentrygo.CurrentHub().Clone()
 		}
+		hub.Scope().SetRequest(r)
+		c.Set(contextDataContext, hub)
+
+		defer recoverWithSentry(config, hub, r)
+		c.InvokeNext()
 	}
 }

@@ -34,12 +34,10 @@ func main() {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
-	r := func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"code": "0",
-			})
-		}
+	r := func(c *kelly.Context) {
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"code": "0",
+		})
 	}
 
 	router1 := kelly.New(nil)
