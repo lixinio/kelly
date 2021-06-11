@@ -12,7 +12,7 @@ type t struct {
 }
 
 func (t *t) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t.c.SetRequest(r)
+	t.c.SetRequest(r).SetResponseWriter(w)
 	// 因为要计算执行的时间， 所以必须要在// ochttp.Handler 执行完后续所有的链路
 	t.c.InvokeNext()
 }
