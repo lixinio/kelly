@@ -70,19 +70,28 @@ func validateHandlers(handlers ...interface{}) []AnnotationHandlerFunc {
 			panic(fmt.Errorf("handler can NOT be empty, : %w", ErrInvalidHandler))
 		}
 
-		if f, ok := item.(func(*Context)); ok {
+		switch f := item.(type) {
+		case HandlerFunc:
 			result = append(result, func(*AnnotationContext) HandlerFunc {
 				return f
 			})
-		} else if f, ok := item.(HandlerFunc); ok {
+		case func(*Context):
 			result = append(result, func(*AnnotationContext) HandlerFunc {
 				return f
 			})
-		} else if f, ok := item.(func(*AnnotationContext) HandlerFunc); ok {
+		case AnnotationHandlerFunc:
 			result = append(result, f)
-		} else if f, ok := item.(AnnotationHandlerFunc); ok {
+		case func(*AnnotationContext) HandlerFunc:
 			result = append(result, f)
-		} else {
+		// case http.HandlerFunc:
+		// 	result = append(result, func(*AnnotationContext) HandlerFunc {
+		// 		return wrapHttpHandlerFunc(f)
+		// 	})
+		// case func(http.ResponseWriter, *http.Request):
+		// 	result = append(result, func(*AnnotationContext) HandlerFunc {
+		// 		return wrapHttpHandlerFunc(f)
+		// 	})
+		default:
 			panic(fmt.Errorf("handler must be AnnotationHandlerFunc|HandlerFunc , : %w", ErrInvalidHandler))
 		}
 	}

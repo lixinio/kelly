@@ -54,16 +54,16 @@ func TestContext(t *testing.T) {
 					return func(c *Context) {
 						v := c.Get(key)
 						if v == nil {
-							t.Errorf("Get fail %w", v)
+							c.InvokeNext()
 							return
 						}
-						c.MustGet(key)
+						t.Errorf("get value unexpect")
 					}
 				},
 				func(c *Context) {
 					v := c.Get(key)
 					if v != nil {
-						t.Errorf("Get fail %w", v)
+						t.Errorf("get value unexpect")
 						return
 					}
 
@@ -73,11 +73,11 @@ func TestContext(t *testing.T) {
 						return
 					}
 
-					defer checkError(t, ErrNoContextData)
-					c.MustGet(key)
+					c.InvokeNext()
 				},
 				func(c *Context) {
 					c.Set(key, value)
+					c.InvokeNext()
 				},
 				func(ac *AnnotationContext) HandlerFunc {
 					return func(c *Context) {
@@ -87,6 +87,7 @@ func TestContext(t *testing.T) {
 							return
 						}
 						c.MustGet(key)
+						c.InvokeNext()
 					}
 				},
 				func(c *Context) {
@@ -96,6 +97,9 @@ func TestContext(t *testing.T) {
 						return
 					}
 					c.MustGet(key)
+
+					defer checkError(t, ErrNoContextData)
+					c.MustGet(key + " invalid")
 				},
 			)
 			if resp.StatusCode != http.StatusOK {
