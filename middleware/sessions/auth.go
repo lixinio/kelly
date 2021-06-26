@@ -108,14 +108,12 @@ func (loginManager *LoginManager) MustGetCurrentUser(c *kelly.Context) interface
 	panic(fmt.Errorf("can NOT get current user"))
 }
 
-func (loginManager *LoginManager) LoginRequired() kelly.AnnotationHandlerFunc {
-	return func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			if loginManager.IsAuthenticated(c) {
-				c.InvokeNext()
-				return
-			}
-			c.Abort(http.StatusUnauthorized, "x")
+func (loginManager *LoginManager) LoginRequired() kelly.HandlerFunc {
+	return func(c *kelly.Context) {
+		if loginManager.IsAuthenticated(c) {
+			c.InvokeNext()
+			return
 		}
+		c.Abort(http.StatusUnauthorized, "x")
 	}
 }

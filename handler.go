@@ -28,3 +28,9 @@ type handlerWrap struct {
 func (hw *handlerWrap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hw.h.ServeHTTP(newContext(w, r))
 }
+
+func wrapHttpHandlerFunc(f http.HandlerFunc) HandlerFunc {
+	return func(c *Context) {
+		f(c.ResponseWriter, c.Request())
+	}
+}

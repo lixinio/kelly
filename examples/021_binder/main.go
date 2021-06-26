@@ -22,14 +22,12 @@ func main() {
 	validator := obj.NewValidator()
 
 	// http://127.0.0.1:9999/query?aaa=1&bbb=2&ccc=3
-	router.GET("/query", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			var obj BindObj
-			if err := c.Bind(&obj); err == nil {
-				c.WriteJSON(http.StatusOK, obj)
-			} else {
-				c.WriteString(http.StatusOK, "参数错误: %s", err.Error())
-			}
+	router.GET("/query", func(c *kelly.Context) {
+		var obj BindObj
+		if err := c.Bind(&obj); err == nil {
+			c.WriteJSON(http.StatusOK, obj)
+		} else {
+			c.WriteString(http.StatusOK, "参数错误: %s", err.Error())
 		}
 	})
 
@@ -40,11 +38,9 @@ func main() {
 			nil,
 			bindErrorHandler,
 		),
-		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
-				bObj := c.GetBindParameter().(*BindObj)
-				c.WriteJSON(http.StatusOK, bObj)
-			}
+		func(c *kelly.Context) {
+			bObj := c.GetBindParameter().(*BindObj)
+			c.WriteJSON(http.StatusOK, bObj)
 		},
 	)
 
@@ -55,11 +51,9 @@ func main() {
 			validator,
 			bindErrorHandler,
 		),
-		func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-			return func(c *kelly.Context) {
-				bObj := c.GetBindPathParameter().(*BindObj)
-				c.WriteJSON(http.StatusOK, bObj)
-			}
+		func(c *kelly.Context) {
+			bObj := c.GetBindPathParameter().(*BindObj)
+			c.WriteJSON(http.StatusOK, bObj)
 		},
 	)
 

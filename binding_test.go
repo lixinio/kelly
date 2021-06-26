@@ -46,19 +46,17 @@ func TestBinding(t *testing.T) {
 		nil,
 		bindErrorHandler,
 	)
-	f := func(ac *AnnotationContext) HandlerFunc {
-		return func(c *Context) {
-			obj := c.GetBindParameter().(*BindObj)
-			if !cmp.Equal(obj, &BindObj{
-				A: "b",
-				B: "d",
-				C: 123,
-				D: true,
-			}) {
-				t.Errorf("GetBindParameter err %v", obj)
-			}
-			c.ResponseStatusOK()
+	f := func(c *Context) {
+		obj := c.GetBindParameter().(*BindObj)
+		if !cmp.Equal(obj, &BindObj{
+			A: "b",
+			B: "d",
+			C: 123,
+			D: true,
+		}) {
+			t.Errorf("GetBindParameter err %v", obj)
 		}
+		c.ResponseStatusOK()
 	}
 
 	resp := kellyFramwork("/", "/?aaa=b&bbb=d&ccc=123&ddd=true", []string{}, m, f)
@@ -69,18 +67,18 @@ func TestBinding(t *testing.T) {
 	groups := []string{
 		"/a", "/b", "/c", "/d",
 	}
-	middlewares := []AnnotationHandlerFunc{
+	middlewares := []interface{}{
 		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
-		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
-		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
+		func(*Context) {},
+		func(*Context) {},
 		m,
 		f,
 	}
-	middlewares2 := []AnnotationHandlerFunc{
+	middlewares2 := []interface{}{
 		m,
+		func(*Context) {},
 		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
-		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
-		func(ac *AnnotationContext) HandlerFunc { return func(*Context) {} },
+		func(*Context) {},
 	}
 	for i := range groups {
 		path := strings.Join(groups[:i+1], "")

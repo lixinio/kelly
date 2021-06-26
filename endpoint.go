@@ -38,7 +38,7 @@ func newEndpoint(method, path string, handlers ...AnnotationHandlerFunc) *endpoi
 }
 
 func (endpoint endpoint) doPreRun(rootPath string, router *router, handlerList ...[]AnnotationHandlerFunc) {
-	var f func(path string, handle httprouter.Handle) = nil
+	var f func(string, httprouter.Handle) = nil
 	switch endpoint.method {
 	case GET:
 		f = router.httpRouter().GET

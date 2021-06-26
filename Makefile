@@ -1,5 +1,5 @@
 REPO = github.com/lixinio/kelly
-BINARIES:=helloworld write route plugin static binder jwtauth openidauth session auth multi trace trace2
+BINARIES:=helloworld write route plugin static binder jwtauth openidauth session auth multi trace trace2 swagger
 
 all: $(BINARIES)
 build: $(BINARIES)

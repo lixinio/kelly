@@ -9,19 +9,19 @@ import (
 
 // Router 路由
 type Router interface {
-	GET(string, ...AnnotationHandlerFunc) Router
-	HEAD(string, ...AnnotationHandlerFunc) Router
-	OPTIONS(string, ...AnnotationHandlerFunc) Router
-	POST(string, ...AnnotationHandlerFunc) Router
-	PUT(string, ...AnnotationHandlerFunc) Router
-	PATCH(string, ...AnnotationHandlerFunc) Router
-	DELETE(string, ...AnnotationHandlerFunc) Router
+	GET(string, ...interface{}) Router
+	HEAD(string, ...interface{}) Router
+	OPTIONS(string, ...interface{}) Router
+	POST(string, ...interface{}) Router
+	PUT(string, ...interface{}) Router
+	PATCH(string, ...interface{}) Router
+	DELETE(string, ...interface{}) Router
 
 	// 新建子路由
-	Group(string, ...AnnotationHandlerFunc) Router
+	Group(string, ...interface{}) Router
 
 	// 动态插入中间件
-	Use(...AnnotationHandlerFunc) Router
+	Use(...interface{}) Router
 
 	// 返回当前Router的绝对路径
 	Path() string
@@ -63,49 +63,85 @@ func (rt *router) validatePath(path string) {
 	}
 }
 
-func (rt *router) validateParam(path string, handlers ...AnnotationHandlerFunc) {
-	if len(handlers) < 1 {
-		panic(fmt.Errorf("must have one handle, : %w", ErrInvalidHandler))
+func validateHandlers(handlers ...interface{}) []AnnotationHandlerFunc {
+	var result []AnnotationHandlerFunc
+	for _, item := range handlers {
+		if item == nil {
+			panic(fmt.Errorf("handler can NOT be empty, : %w", ErrInvalidHandler))
+		}
+
+		switch f := item.(type) {
+		case HandlerFunc:
+			result = append(result, func(*AnnotationContext) HandlerFunc {
+				return f
+			})
+		case func(*Context):
+			result = append(result, func(*AnnotationContext) HandlerFunc {
+				return f
+			})
+		case AnnotationHandlerFunc:
+			result = append(result, f)
+		case func(*AnnotationContext) HandlerFunc:
+			result = append(result, f)
+		// case http.HandlerFunc:
+		// 	result = append(result, func(*AnnotationContext) HandlerFunc {
+		// 		return wrapHttpHandlerFunc(f)
+		// 	})
+		// case func(http.ResponseWriter, *http.Request):
+		// 	result = append(result, func(*AnnotationContext) HandlerFunc {
+		// 		return wrapHttpHandlerFunc(f)
+		// 	})
+		default:
+			panic(fmt.Errorf("handler must be AnnotationHandlerFunc|HandlerFunc , : %w", ErrInvalidHandler))
+		}
 	}
+	return result
+}
+
+func (rt *router) validateParam(path string, handlers ...interface{}) []AnnotationHandlerFunc {
+	if len(handlers) < 1 {
+		panic(fmt.Errorf("must have one handler at least, : %w", ErrInvalidHandler))
+	}
+
 	rt.validatePath(path)
+	return validateHandlers(handlers...)
 }
 
 func (rt *router) methodImp(
 	method string,
 	path string,
-	handlers ...AnnotationHandlerFunc,
+	handlers ...interface{},
 ) Router {
-
-	rt.validateParam(path, handlers...)
-	rt.endpoints = append(rt.endpoints, newEndpoint(method, path, handlers...))
+	annotationHandlers := rt.validateParam(path, handlers...)
+	rt.endpoints = append(rt.endpoints, newEndpoint(method, path, annotationHandlers...))
 	return rt
 }
 
-func (rt *router) GET(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) GET(path string, handlers ...interface{}) Router {
 	return rt.methodImp(GET, path, handlers...)
 }
 
-func (rt *router) HEAD(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) HEAD(path string, handlers ...interface{}) Router {
 	return rt.methodImp(HEAD, path, handlers...)
 }
 
-func (rt *router) OPTIONS(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) OPTIONS(path string, handlers ...interface{}) Router {
 	return rt.methodImp(OPTIONS, path, handlers...)
 }
 
-func (rt *router) POST(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) POST(path string, handlers ...interface{}) Router {
 	return rt.methodImp(POST, path, handlers...)
 }
 
-func (rt *router) PUT(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) PUT(path string, handlers ...interface{}) Router {
 	return rt.methodImp(PUT, path, handlers...)
 }
 
-func (rt *router) PATCH(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) PATCH(path string, handlers ...interface{}) Router {
 	return rt.methodImp(PATCH, path, handlers...)
 }
 
-func (rt *router) DELETE(path string, handlers ...AnnotationHandlerFunc) Router {
+func (rt *router) DELETE(path string, handlers ...interface{}) Router {
 	return rt.methodImp(DELETE, path, handlers...)
 }
 
@@ -113,26 +149,19 @@ func (rt *router) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rt.rt.ServeHTTP(rw, r)
 }
 
-func (rt *router) Group(path string, handlers ...AnnotationHandlerFunc) Router {
-	rt.validatePath(path)
+func (rt *router) Group(path string, handlers ...interface{}) Router {
 	if path == "/" {
 		path = ""
 	}
-	newRt := &router{
-		rt:           rt.rt,
-		path:         path,
-		absolutePath: rt.absolutePath + path,
-		middlewares:  handlers,
-		parent:       rt,
-		k:            rt.k,
-	}
 
+	newRt := newRouterImp(rt.rt, rt.k, rt, path, rt.absolutePath+path, handlers...)
 	rt.groups = append(rt.groups, newRt)
 	return newRt
 }
 
-func (rt *router) Use(handlers ...AnnotationHandlerFunc) Router {
-	for _, v := range handlers {
+func (rt *router) Use(handlers ...interface{}) Router {
+	annotationHandlers := validateHandlers(handlers...)
+	for _, v := range annotationHandlers {
 		rt.middlewares = append(rt.middlewares, v)
 	}
 	return rt
@@ -150,13 +179,20 @@ func (rt *router) doPreRun(handlerList ...[]AnnotationHandlerFunc) {
 	}
 }
 
-func newRouterImp(hr *httprouter.Router, handlers ...AnnotationHandlerFunc) *router {
-	rt := &router{
-		rt:           hr,
-		path:         "",
-		absolutePath: "",
-		middlewares:  handlers,
+func newRouterImp(
+	rt *httprouter.Router,
+	k Kelly,
+	parent *router,
+	path, absolutePath string,
+	handlers ...interface{},
+) *router {
+	annotationHandlers := validateHandlers(handlers...)
+	return &router{
+		rt:           rt,
+		path:         path,
+		absolutePath: absolutePath,
+		middlewares:  annotationHandlers,
+		parent:       parent,
+		k:            k,
 	}
-
-	return rt
 }

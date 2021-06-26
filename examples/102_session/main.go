@@ -20,21 +20,19 @@ func main() {
 		panic(err)
 	}
 
-	router.GET("/", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			session, closer, err := s.StartSession(c)
-			if err != nil {
-				panic(err)
-			}
-
-			session.Values["foo"] = "bar"
-			session.Values["bar"] = "fpo"
-
-			closer()
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"code": "0",
-			})
+	router.GET("/", func(c *kelly.Context) {
+		session, closer, err := s.StartSession(c)
+		if err != nil {
+			panic(err)
 		}
+
+		session.Values["foo"] = "bar"
+		session.Values["bar"] = "fpo"
+
+		closer()
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"code": "0",
+		})
 	})
 
 	router.Run(":9999")

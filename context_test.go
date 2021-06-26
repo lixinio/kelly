@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func getKelly(group, append bool, middlewares ...AnnotationHandlerFunc) (*kellyImp, Router) {
+func getKelly(group, append bool, middlewares ...interface{}) (*kellyImp, Router) {
 	var k *kellyImp = nil
 	var rt Router = nil
 	if !group {
@@ -29,7 +29,7 @@ func getKelly(group, append bool, middlewares ...AnnotationHandlerFunc) (*kellyI
 	return k, rt
 }
 
-func kellyMiddleware(group, append bool, handler AnnotationHandlerFunc, middlewares ...AnnotationHandlerFunc) *http.Response {
+func kellyMiddleware(group, append bool, handler AnnotationHandlerFunc, middlewares ...interface{}) *http.Response {
 	k, rt := getKelly(group, append, middlewares...)
 	rt.GET("/", handler)
 	k.router.doPreRun()
@@ -54,34 +54,30 @@ func TestContext(t *testing.T) {
 					return func(c *Context) {
 						v := c.Get(key)
 						if v == nil {
-							t.Errorf("Get fail %w", v)
+							c.InvokeNext()
 							return
 						}
-						c.MustGet(key)
+						t.Errorf("get value unexpect")
 					}
 				},
-				func(ac *AnnotationContext) HandlerFunc {
-					return func(c *Context) {
-						v := c.Get(key)
-						if v != nil {
-							t.Errorf("Get fail %w", v)
-							return
-						}
-
-						v = c.GetDefault(key, value)
-						if v != value {
-							t.Errorf("Get fail %w", v)
-							return
-						}
-
-						defer checkError(t, ErrNoContextData)
-						c.MustGet(key)
+				func(c *Context) {
+					v := c.Get(key)
+					if v != nil {
+						t.Errorf("get value unexpect")
+						return
 					}
+
+					v = c.GetDefault(key, value)
+					if v != value {
+						t.Errorf("Get fail %w", v)
+						return
+					}
+
+					c.InvokeNext()
 				},
-				func(ac *AnnotationContext) HandlerFunc {
-					return func(c *Context) {
-						c.Set(key, value)
-					}
+				func(c *Context) {
+					c.Set(key, value)
+					c.InvokeNext()
 				},
 				func(ac *AnnotationContext) HandlerFunc {
 					return func(c *Context) {
@@ -91,17 +87,19 @@ func TestContext(t *testing.T) {
 							return
 						}
 						c.MustGet(key)
+						c.InvokeNext()
 					}
 				},
-				func(ac *AnnotationContext) HandlerFunc {
-					return func(c *Context) {
-						v := c.Get(key)
-						if v == nil {
-							t.Errorf("Get fail %w", v)
-							return
-						}
-						c.MustGet(key)
+				func(c *Context) {
+					v := c.Get(key)
+					if v == nil {
+						t.Errorf("Get fail %w", v)
+						return
 					}
+					c.MustGet(key)
+
+					defer checkError(t, ErrNoContextData)
+					c.MustGet(key + " invalid")
 				},
 			)
 			if resp.StatusCode != http.StatusOK {

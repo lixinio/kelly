@@ -58,7 +58,7 @@ func (k *kellyImp) tryInit(addr string) {
 	}
 	k.inited = true
 
-	k.Use(LoggerRouter, Logger)
+	k.Use(LoggerRouter)
 	k.router.doPreRun()
 
 	for _, handler := range k.runBeforeHandlers {
@@ -107,7 +107,7 @@ func defaultKellyConfig() *Config {
 	}
 }
 
-func newImp(config *Config, handlers ...AnnotationHandlerFunc) Kelly {
+func newImp(config *Config, handlers ...interface{}) Kelly {
 	router := httprouter.New()
 	if config == nil {
 		config = defaultKellyConfig()
@@ -124,20 +124,18 @@ func newImp(config *Config, handlers ...AnnotationHandlerFunc) Kelly {
 	router.NotFound = &handlerFuncWrap{config.HandleNotFound}
 	router.MethodNotAllowed = &handlerFuncWrap{config.HandleMethodNotAllowed}
 
-	rt := newRouterImp(router, handlers...)
 	ky := &kellyImp{
-		router:            rt,
 		hr:                router,
 		config:            config,
 		runBeforeHandlers: make([]PreRunHandler, 0),
 	}
-	rt.k = ky
+	ky.router = newRouterImp(router, ky, nil, "", "", handlers...)
 
 	return ky
 }
 
 // New 创建一个新实例
-func New(config *Config, handlers ...AnnotationHandlerFunc) Kelly {
+func New(config *Config, handlers ...interface{}) Kelly {
 	return newImp(config, handlers...)
 }
 
@@ -178,7 +176,7 @@ func (k *kellyImp) print(addr string) {
 	fmt.Println(txt)
 	fmt.Printf(" * Debug mode: %v\n", k.config.Debug)
 	if strings.HasPrefix(addr, ":") {
-		fmt.Printf(" * Running on 127:0.0.0%s\n", addr)
+		fmt.Printf(" * Running on 127.0.0.1%s\n", addr)
 	} else {
 		fmt.Printf(" * Running on %s\n", addr)
 	}

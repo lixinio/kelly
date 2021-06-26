@@ -11,7 +11,7 @@ type SwaggerApiEntry struct {
 	Description string                 `json:"description,omitempty" yaml:"description"`
 	Summary     string                 `json:"summary" yaml:"summary"`
 	Tags        []string               `json:"tags" yaml:"tags" binding:"required,dive,required"`
-	Parameters  []*SwaggerApiParameter `json:"parameters" yaml:"parameters" binding:"dive"`
+	Parameters  []*SwaggerApiParameter `json:"parameters,omitempty" yaml:"parameters,omitempty" binding:"dive"`
 	Produces    []string               `json:"produces,omitempty" yaml:"produces"`
 	Responses   map[int]*JsonSchemaObj `json:"responses" yaml:"responses" binding:"required"`
 	OperationId string                 `json:"operationId,omitempty"`

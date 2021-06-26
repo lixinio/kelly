@@ -47,6 +47,11 @@ func (c *Context) SetRequest(r *http.Request) *Context {
 	return c
 }
 
+func (c *Context) SetResponseWriter(w http.ResponseWriter) *Context {
+	c.ResponseWriter = w
+	return c
+}
+
 // Context 获得 context.Context
 func (c *Context) Context() context.Context {
 	return c.r.Context()

@@ -10,10 +10,8 @@ import (
 func main() {
 	router := kelly.New(nil)
 
-	router.GET("/", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.Redirect(http.StatusFound, "/files")
-		}
+	router.GET("/", func(c *kelly.Context) {
+		c.Redirect(http.StatusFound, "/files")
 	})
 
 	router.GET("/files/*path", static.Static(&static.Config{

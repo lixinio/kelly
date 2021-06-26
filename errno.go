@@ -22,7 +22,7 @@ var (
 	// ErrInvalidRouterPath 错误的路由路径
 	ErrInvalidRouterPath = errors.New("router path is invalid")
 	// ErrInvalidHandler 错误的处理句柄
-	ErrInvalidHandler = errors.New("handler is invalid")
+	ErrInvalidHandler = errors.New("handler is invalid， must be AnnotationHandlerFunc|HandlerFunc")
 	// ErrWriteRespFail 写响应失败
 	ErrWriteRespFail = errors.New("write response fail")
 	// ErrBindFail bind请求参数（到对象）失败

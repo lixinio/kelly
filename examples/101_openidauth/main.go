@@ -44,37 +44,33 @@ func initAuth(router kelly.Router, handler *Handler, iss string) {
 		}
 	})
 
-	r.GET("/login/fail", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			c.Abort(401, "认证失败")
-		}
+	r.GET("/login/fail", func(c *kelly.Context) {
+		c.Abort(401, "认证失败")
 	})
 
-	r.POST("/login", func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			username, err := c.GetFormVarible("username")
-			if err != nil {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
-			}
-			password, err := c.GetFormVarible("password")
-			if err != nil {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
-			}
+	r.POST("/login", func(c *kelly.Context) {
+		username, err := c.GetFormVarible("username")
+		if err != nil {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
+		}
+		password, err := c.GetFormVarible("password")
+		if err != nil {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
+		}
 
-			if len(username) > 0 && password == "456" {
-				// 构建jwt claims数据
-				claims := makeClaims(aud, userID, username, iss, 1000)
-				token, err := handler.issueToken(claims)
-				if err != nil {
-					c.Abort(500, err.Error())
-				}
-				c.WriteString(http.StatusOK, token)
-			} else {
-				c.Redirect(http.StatusFound, r.Path()+"/login/fail")
-				return
+		if len(username) > 0 && password == "456" {
+			// 构建jwt claims数据
+			claims := makeClaims(aud, userID, username, iss, 1000)
+			token, err := handler.issueToken(claims)
+			if err != nil {
+				c.Abort(500, err.Error())
 			}
+			c.WriteString(http.StatusOK, token)
+		} else {
+			c.Redirect(http.StatusFound, r.Path()+"/login/fail")
+			return
 		}
 	})
 }
@@ -135,14 +131,12 @@ func main() {
 		return
 	}
 
-	router.GET("/", openidAuth, func(ac *kelly.AnnotationContext) kelly.HandlerFunc {
-		return func(c *kelly.Context) {
-			user, _ := openid.CurrentUser(c).(*User)
-			c.WriteIndentedJSON(http.StatusOK, kelly.H{
-				"code": "0",
-				"data": user.Name,
-			})
-		}
+	router.GET("/", openidAuth, func(c *kelly.Context) {
+		user, _ := openid.CurrentUser(c).(*User)
+		c.WriteIndentedJSON(http.StatusOK, kelly.H{
+			"code": "0",
+			"data": user.Name,
+		})
 	})
 
 	router.Run(fmt.Sprintf(":%d", port))
