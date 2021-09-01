@@ -15,37 +15,38 @@ var (
 func init() {
 	validatorAdapter = validator.New()
 	validatorAdapter.SetTagName("validate")
-	validatorAdapter.RegisterValidationCtx("date", isDate)
-	validatorAdapter.RegisterValidationCtx("datetime", isDatetime)
+	validatorAdapter.RegisterValidationCtx("date", RegexValidator("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"))
+	validatorAdapter.RegisterValidationCtx("datetime", RegexValidator("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"))
+	validatorAdapter.RegisterValidationCtx("alpha_num_dash", RegexValidator("^[0-9A-Za-z_-]+$"))
+}
+
+func RegexValidator(pattern string) validator.FuncCtx {
+	regex := regexp.MustCompile(pattern)
+	return func(ctx context.Context, fl validator.FieldLevel) bool {
+		if fl.Field().Kind() != reflect.String {
+			return false
+		}
+		return regex.MatchString(fl.Field().String())
+	}
 }
 
 type Validator struct {
-	v *validator.Validate
+	V *validator.Validate
 }
 
 func NewValidator() *Validator {
 	return &Validator{
-		v: validatorAdapter,
+		V: validatorAdapter,
 	}
 }
 
 func (v *Validator) Validate(obj interface{}) error {
 	if kindOfData(obj) == reflect.Struct {
-		if err := v.v.Struct(obj); err != nil {
+		if err := v.V.Struct(obj); err != nil {
 			return error(err)
 		}
 	}
 	return nil
-}
-
-func isDate(ctx context.Context, fl validator.FieldLevel) bool {
-	alphaRegex := regexp.MustCompile("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-	return alphaRegex.MatchString(fl.Field().String())
-}
-
-func isDatetime(ctx context.Context, fl validator.FieldLevel) bool {
-	alphaRegex := regexp.MustCompile("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$")
-	return alphaRegex.MatchString(fl.Field().String())
 }
 
 func kindOfData(data interface{}) reflect.Kind {
