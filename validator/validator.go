@@ -1,5 +1,5 @@
 package validator
 
 type Validator interface {
-	Validate(interface{}) error // 校验struct
+	Validate(interface{}, ...string) error // 校验struct
 }

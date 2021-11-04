@@ -40,9 +40,22 @@ func NewValidator() *Validator {
 	}
 }
 
-func (v *Validator) Validate(obj interface{}) error {
-	if kindOfData(obj) == reflect.Struct {
+func (v *Validator) Validate(obj interface{}, params ...string) error {
+	kind := kindOfData(obj)
+	if kind == reflect.Struct {
 		if err := v.V.Struct(obj); err != nil {
+			return err
+		}
+	} else if kind == reflect.Slice {
+		tag := "required,dive"
+		if len(params) > 0 {
+			tag = params[0]
+		}
+		if err := v.V.Var(obj, tag); err != nil {
+			return err
+		}
+	} else if len(params) > 0 {
+		if err := v.V.Var(obj, params[0]); err != nil {
 			return error(err)
 		}
 	}
