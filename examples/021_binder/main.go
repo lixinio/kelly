@@ -8,9 +8,11 @@ import (
 )
 
 type BindObj struct {
-	A string `json:"aaa,omitempty" binding:"required,max=32,min=6" error:"长度6/32"`
-	B string `json:"bbb,omitempty"`
-	C int    `json:"ccc,omitempty"`
+	A string   `json:"aaa,omitempty" validate:"required,max=32,min=6" error:"长度6/32"`
+	B string   `json:"bbb,omitempty"`
+	C int      `json:"ccc,omitempty"`
+	D []int    `json:"ddd,omitempty" validate:"dive,min=1,max=10"`
+	E []string `json:"eee,omitempty" disable_split:""`
 }
 
 func bindErrorHandler(c *kelly.Context, err error) {
@@ -21,7 +23,7 @@ func main() {
 	router := kelly.New(nil)
 	validator := obj.NewValidator()
 
-	// http://127.0.0.1:9999/query?aaa=1&bbb=2&ccc=3
+	// http://127.0.0.1:9999/query?aaa=123456&bbb=2&ccc=3
 	router.GET("/query", func(c *kelly.Context) {
 		var obj BindObj
 		if err := c.Bind(&obj); err == nil {
@@ -31,11 +33,11 @@ func main() {
 		}
 	})
 
-	// http://127.0.0.1:9999/query?aaa=1&bbb=2&ccc=3
+	// http://127.0.0.1:9999/query2?aaa=123456&bbb=2&ccc=3&ddd=4,5,6&eee=asd,fgh,ijk
 	router.GET("/query2",
 		kelly.BindMiddleware(
 			func() interface{} { return &BindObj{} },
-			nil,
+			validator,
 			bindErrorHandler,
 		),
 		func(c *kelly.Context) {

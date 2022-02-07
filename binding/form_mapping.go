@@ -44,12 +44,20 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			continue
 		}
 
-		numElems := len(inputValue)
-		if structFieldKind == reflect.Slice && numElems > 0 {
+		if structFieldKind == reflect.Slice && len(inputValue) > 0 {
+			var realValue []string
+			if _, ok := typeField.Tag.Lookup("disable_split"); !ok {
+				for _, value := range inputValue {
+					realValue = append(realValue, strings.Split(value, ",")...)
+				}
+			} else {
+				realValue = inputValue
+			}
+			numElems := len(realValue)
 			sliceOf := structField.Type().Elem()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
 			for i := 0; i < numElems; i++ {
-				if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i)); err != nil {
+				if err := setWithProperType(sliceOf, realValue[i], slice.Index(i)); err != nil {
 					return err
 				}
 			}
