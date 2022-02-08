@@ -20,7 +20,7 @@ type BindObj struct {
 type validatorBindObj struct {
 }
 
-func (v validatorBindObj) Validate(obj interface{}) error {
+func (v validatorBindObj) Validate(obj interface{}, params ...string) error {
 	bingObj, ok := obj.(*BindObj)
 	if !ok {
 		return fmt.Errorf("invalid object type")
