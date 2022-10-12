@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"log"
 	"net/http"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	"github.com/lixinio/kelly"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 // # http://localhost:16686/
@@ -26,28 +30,15 @@ import (
 //   jaegertracing/all-in-one:1.22
 
 func subHandler(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "/bar")
+	ctx, span := otel.Tracer("/bar").Start(ctx, "Run")
 	defer span.End()
 
 	// 6. Set status upon error
-	span.SetStatus(trace.Status{
-		Code:    trace.StatusCodeUnknown,
-		Message: "error",
-	})
+	span.SetStatus(codes.Unset,"error")
 
-	span.AddAttributes(
-		trace.StringAttribute("k", "v"),
-		trace.StringAttribute("k2", "v2"),
-	)
-
-	// 7. Annotate our span to capture metadata about our operation
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("bytes to int", 23),
-	}, "Invoking doWork")
-
-	ctx, _ = tag.New(
-		ctx,
-		tag.Upsert(tag.MustNewKey("func"), "sub func"),
+	span.SetAttributes(
+		attribute.String("k", "v"),
+		attribute.String("k2", "v2"),
 	)
 }
 
@@ -57,21 +48,29 @@ func Handler(c *kelly.Context) {
 }
 
 func main() {
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		CollectorEndpoint: "http://localhost:14268/api/traces",
-		Process: jaeger.Process{
-			ServiceName: "kelly-demo",
-		},
-	})
+	exporter, err:= jaeger.New(
+		jaeger.WithCollectorEndpoint(
+			jaeger.WithEndpoint("http://localhost:14268/api/traces"),
+		),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	trace.RegisterExporter(exporter)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	provider := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("server name"),
+			//attribute.String("environment", environment),
+			//attribute.Int64("ID", id),
+		)),
+		trace.WithSampler(trace.TraceIDRatioBased(0.01)),
+	)
+	otel.SetTracerProvider(provider)
 
-	r := kelly.New(nil)
+	h := &otelhttp.Handler{}
+	r := kelly.New(nil, h)
 	r.GET("/t", Handler)
-	h := &ochttp.Handler{Handler: r}
 
 	log.Fatal(http.ListenAndServe(":9999", h))
 }

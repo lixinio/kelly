@@ -1,10 +1,11 @@
 package telemetry
 
 import (
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/filters"
 	"net/http"
 
 	"github.com/lixinio/kelly"
-	"go.opencensus.io/plugin/ochttp"
 )
 
 type t struct {
@@ -17,8 +18,17 @@ func (t *t) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.c.InvokeNext()
 }
 
-func OChttp(c *kelly.Context) {
-	h := &ochttp.Handler{Handler: &t{c}}
+func Otelhttp(c *kelly.Context) {
+	h := otelhttp.NewHandler(
+		&t{c},
+		c.Request().RequestURI,
+		otelhttp.WithFilter(
+			filters.None(
+				filters.Path("/healthz"),
+			),
+		),
+	)
+
 	h.ServeHTTP(c.ResponseWriter, c.Request())
 	// 这里无需再 InvokeNext
 }
