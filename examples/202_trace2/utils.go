@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"contrib.go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 func waitSignal(stop chan struct{}) {
@@ -29,15 +32,23 @@ func watchSignal(cancel context.CancelFunc) {
 }
 
 func initTrace() {
-	exporter, err := jaeger.NewExporter(jaeger.Options{
-		CollectorEndpoint: "http://localhost:14268/api/traces",
-		Process: jaeger.Process{
-			ServiceName: "kelly3-demo",
-		},
-	})
+	exporter, err:= jaeger.New(
+		jaeger.WithCollectorEndpoint(
+			jaeger.WithEndpoint("http://localhost:14268/api/traces"),
+		),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	trace.RegisterExporter(exporter)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	provider := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("server name"),
+			//attribute.String("environment", environment),
+			//attribute.Int64("ID", id),
+		)),
+		trace.WithSampler(trace.TraceIDRatioBased(0.01)),
+	)
+	otel.SetTracerProvider(provider)
 }

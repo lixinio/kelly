@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,9 +16,7 @@ import (
 
 	"github.com/lixinio/kelly"
 	"github.com/lixinio/kelly/middleware/telemetry"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+
 )
 
 // # http://localhost:16686/
@@ -31,28 +33,15 @@ import (
 //   jaegertracing/all-in-one:1.22
 
 func subHandler(ctx context.Context, name string) {
-	ctx, span := trace.StartSpan(ctx, name)
+	ctx, span := otel.Tracer("/bar").Start(ctx, "Run")
 	defer span.End()
 
 	// 6. Set status upon error
-	span.SetStatus(trace.Status{
-		Code:    trace.StatusCodeUnknown,
-		Message: "error",
-	})
+	span.SetStatus(codes.Unset,"error")
 
-	span.AddAttributes(
-		trace.StringAttribute("k", "v"),
-		trace.StringAttribute("k2", "v2"),
-	)
-
-	// 7. Annotate our span to capture metadata about our operation
-	span.Annotate([]trace.Attribute{
-		trace.Int64Attribute("bytes to int", 23),
-	}, "Invoking doWork")
-
-	ctx, _ = tag.New(
-		ctx,
-		tag.Upsert(tag.MustNewKey("func"), "sub func"),
+	span.SetAttributes(
+		attribute.String("k", "v"),
+		attribute.String("k2", "v2"),
 	)
 }
 
@@ -64,7 +53,7 @@ func Handler(name string) kelly.HandlerFunc {
 		// 调用http请求
 		req, _ := http.NewRequest("GET", "http://127.0.0.1:9998/slave", nil)
 		req = req.WithContext(c.Context())
-		client := &http.Client{Transport: &ochttp.Transport{}}
+		client := &http.Client{Transport: &otelhttp.Transport{}}
 		res, err := client.Do(req)
 		if err != nil {
 			log.Fatalf("Failed to make the request: %v", err)
@@ -93,9 +82,9 @@ func main() {
 	wg.Add(2)
 
 	router1 := kelly.New(nil)
-	router1.GET("/main", telemetry.OChttp, Handler("main_request"))
+	router1.GET("/main", telemetry.Otelhttp, Handler("main_request"))
 	router2 := kelly.New(nil)
-	router2.GET("/slave", telemetry.OChttp, Handler2("sub_request"))
+	router2.GET("/slave", telemetry.Otelhttp, Handler2("sub_request"))
 
 	go watchSignal(cancel)
 	go func() {
