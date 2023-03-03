@@ -13,8 +13,8 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-jose/go-jose/v3"
 	"github.com/lixinio/kelly"
-	"gopkg.in/square/go-jose.v2"
 )
 
 const (

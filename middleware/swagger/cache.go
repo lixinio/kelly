@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/lixinio/kelly"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type cache struct {
